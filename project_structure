@@ -1,0 +1,26 @@
+daily-shell-scripts/
+├── README.md                       # 项目说明文档
+├── bin/                           # 编译后的可执行脚本存放目录
+├── src/                           # 源代码目录
+│   ├── file_ops/                  # 文件操作相关脚本
+│   │   ├── backup.sh
+│   │   └── batch_rename.sh
+│   ├── system/                    # 系统管理相关脚本
+│   │   ├── memory_monitor.sh
+│   │   ├── disk_clean.sh
+│   │   └── process_monitor.sh
+│   ├── network/                   # 网络工具脚本
+│   │   ├── port_scan.sh
+│   │   └── network_monitor.sh
+│   ├── dev_tools/                 # 开发工具脚本
+│   │   ├── git_batch.sh
+│   │   └── docker_manage.sh
+│   └── utils/                     # 通用工具脚本
+│       ├── date_convert.sh
+│       └── string_process.sh
+├── tests/                         # 测试目录
+│   └── test_scripts/
+├── docs/                          # 文档目录
+│   └── usage/
+├── build.sh                       # 构建脚本
+└── install.sh                     # 安装脚本 
