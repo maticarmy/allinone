@@ -24,9 +24,9 @@ show_logo() {
     echo "    ██║ ╚═╝ ██║██║  ██║   ██║   ██║  ██║██║██╔╝ ██╗"
     echo "    ╚═╝     ╚═╝╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝╚═╝╚═╝  ╚═╝"
     echo -e "${NC}"
-    echo -e "${CYAN}┌──────────────── VPS 管理控制台 ────────────────┐"
-    echo -e "│                   Ver $VERSION                     │"
-    echo -e "└──────────────────────────────────────────────────┘${NC}"
+    echo -e "${CYAN}┌─────────── VPS 管理控制台 ───────────┐"
+    echo -e "│              Ver $VERSION                │"
+    echo -e "└────────────────────────────────────┘${NC}"
     echo
     echo -e "${GREEN}[+]${WHITE} 系统初始化...${NC}"
     
@@ -42,20 +42,20 @@ show_logo() {
 
 # 主菜单
 show_menu() {
-    echo -e "\n${GREEN}┌─────────────── 系统控制面板 ───────────────┐${NC}"
+    echo -e "\n${GREEN}┌─────────── 系统控制面板 ───────────┐${NC}"
     echo -e "${WHITE}  1. 系统初始化          2. SSL证书管理"
     echo -e "  3. 防火墙配置          4. 面板管理"
     echo -e "  5. 备份管理            6. 更新系统"
     echo -e "  7. 退出"
-    echo -e "${GREEN}└──────────────────────────────────────┘${NC}"
+    echo -e "${GREEN}└────────────────────────────────────┘${NC}"
 }
 
 # 子菜单样式
 show_submenu() {
     local title=$1
-    echo -e "\n${BLUE}╔════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "\n${BLUE}╔════════════════════════════════════════════════════��══════╗${NC}"
     echo -e "${BLUE}║${GREEN} $title ${BLUE}║${NC}"
-    echo -e "${BLUE}╚════════════════════════════════════════════════════════════╝${NC}"
+    echo -e "${BLUE}╚═══════════════════════════════════════════════════════════╝${NC}"
 }
 
 # 操作提示样式
@@ -96,23 +96,66 @@ init_scripts() {
     if [ ! -f "${SCRIPT_DIR}/.version" ] || [ "$(cat ${SCRIPT_DIR}/.version)" != "$VERSION" ]; then
         show_tips "正在下载脚本..."
         
-        curl -fsSL https://raw.githubusercontent.com/maticarmy/allinone/master/scripts/init.sh -o ${SCRIPT_DIR}/init.sh
-        curl -fsSL https://raw.githubusercontent.com/maticarmy/allinone/master/scripts/cert.sh -o ${SCRIPT_DIR}/cert.sh
-        curl -fsSL https://raw.githubusercontent.com/maticarmy/allinone/master/scripts/firewall.sh -o ${SCRIPT_DIR}/firewall.sh
-        curl -fsSL https://raw.githubusercontent.com/maticarmy/allinone/master/scripts/panel.sh -o ${SCRIPT_DIR}/panel.sh
-        curl -fsSL https://raw.githubusercontent.com/maticarmy/allinone/master/scripts/backup.sh -o ${SCRIPT_DIR}/backup.sh
+        # 定义脚本仓库地址
+        REPO_URL="https://raw.githubusercontent.com/maticarmy/allinone/master"
+        LOCAL_REPO="./scripts"  # 本地脚本目录
         
-        chmod +x ${SCRIPT_DIR}/*.sh
+        # 定义要下载的脚本
+        declare -A scripts=(
+            ["init.sh"]="系统初始化模块"
+            ["cert.sh"]="SSL证书管理模块"
+            ["firewall.sh"]="防火墙配置模块"
+            ["panel.sh"]="面板管理模块"
+            ["backup.sh"]="备份管理模块"
+        )
+        
+        # 下载或复制脚本
+        for script in "${!scripts[@]}"; do
+            show_tips "准备${scripts[$script]}..."
+            
+            # 优先使用本地文件
+            if [ -f "${LOCAL_REPO}/${script}" ]; then
+                cp "${LOCAL_REPO}/${script}" "${SCRIPT_DIR}/${script}"
+                chmod +x "${SCRIPT_DIR}/${script}"
+                echo -e "${GREEN}✓${NC} ${scripts[$script]}准备完成(本地)"
+            else
+                # 尝试从远程下载
+                if curl -fsSL "$REPO_URL/scripts/$script" -o "${SCRIPT_DIR}/$script"; then
+                    chmod +x "${SCRIPT_DIR}/$script"
+                    echo -e "${GREEN}✓${NC} ${scripts[$script]}准备完成(远程)"
+                else
+                    show_warning "${scripts[$script]}获取失败"
+                    return 1
+                fi
+            fi
+        done
+        
         echo "$VERSION" > ${SCRIPT_DIR}/.version
-        
-        show_tips "脚本下载完成！"
+        show_tips "所有模块准备就绪！"
+    fi
+}
+
+# 运行模块函数
+run_module() {
+    local module=$1
+    local module_path="${SCRIPT_DIR}/${module}"
+    
+    if [ -x "$module_path" ]; then
+        # 如果本地文件存在且可执行
+        "$module_path"
+    else
+        show_warning "模块 $module 不存在或无执行权限"
+        return 1
     fi
 }
 
 # 主程序
 main() {
     show_logo
-    init_scripts
+    if ! init_scripts; then
+        show_warning "初始化失败，请检查网络连接后重试"
+        exit 1
+    fi
     
     while true; do
         show_menu
@@ -123,12 +166,12 @@ main() {
             1) 
                 show_tips "加载系统初始化模块..."
                 show_progress 0.02
-                bash ${SCRIPT_DIR}/init.sh
+                run_module "init.sh"
                 ;;
-            2) bash ${SCRIPT_DIR}/cert.sh ;;
-            3) bash ${SCRIPT_DIR}/firewall.sh ;;
-            4) bash ${SCRIPT_DIR}/panel.sh ;;
-            5) bash ${SCRIPT_DIR}/backup.sh ;;
+            2) run_module "cert.sh" ;;
+            3) run_module "firewall.sh" ;;
+            4) run_module "panel.sh" ;;
+            5) run_module "backup.sh" ;;
             6) 
                 show_tips "检查更新..."
                 init_scripts
