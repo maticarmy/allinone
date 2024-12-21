@@ -77,14 +77,22 @@ show_logo() {
     echo "    ██║╚██╔╝██║██╔══██║   ██║   ██╔══██╗██║ ██╔██╗ "
     echo "    ██║ ╚═╝ ██║██║  ██║   ██║   ██║  ██║██║██╔╝ ██╗"
     echo "    ╚═╝     ╚═╝╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝╚═╝╚═╝  ╚═╝"
-    echo -e "${CYAN}"
-    echo "    ┌──────────── VPS 管理控制台 ────────────┐"
-    echo "    │               Ver $VERSION                 │"
-    echo "    └─────────────────────────────────────┘"
     echo -e "${NC}"
+    echo -e "${CYAN}┌──────────────── VPS 管理控制台 ────────────────┐"
+    echo -e "│                   Ver $VERSION                     │"
+    echo -e "└──────────────────────────────────────────────────┘${NC}"
+    echo
     echo -e "${GREEN}[+]${WHITE} 系统就绪...${NC}"
     echo -e "${GREEN}[+]${WHITE} 加载模块...${NC}"
     echo -e "${GREEN}[+]${WHITE} 初始化界面...${NC}"
+    
+    # 简单的加载动画
+    echo -ne "\n${GREEN}[${NC}"
+    for i in {1..50}; do
+        echo -ne "${GREEN}#${NC}"
+        sleep 0.02
+    done
+    echo -e "${GREEN}]${NC}"
     sleep 0.5
 }
 
@@ -95,13 +103,13 @@ show_menu() {
     echo -e "  3. 防火墙配置          4. 面板管理"
     echo -e "  5. 备份管理            6. 更新系统"
     echo -e "  7. 退出"
-    echo -e "${GREEN}└───────────────────────────────────────┘${NC}"
+    echo -e "${GREEN}└──────────────────────────────────────┘${NC}"
 }
 
 # 子菜单样式
 show_submenu() {
     local title=$1
-    echo -e "\n${BLUE}╔════════════════���═══════════════════════════════════════════╗${NC}"
+    echo -e "\n${BLUE}╔════════════════════════════════════════════════════════════╗${NC}"
     echo -e "${BLUE}║${GREEN} $title ${BLUE}║${NC}"
     echo -e "${BLUE}╚════════════════════════════════════════════════════════════╝${NC}"
 }
@@ -159,9 +167,8 @@ init_scripts() {
 
 # 主程序
 main() {
-    show_matrix_loading
     show_logo
-    show_progress 0.01
+    init_scripts
     
     while true; do
         show_menu
