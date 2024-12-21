@@ -30,8 +30,9 @@ show_menu() {
     echo "2. SSL证书管理"
     echo "3. 防火墙配置"
     echo "4. 面板管理"
-    echo "5. 更新脚本"
-    echo "6. 退出"
+    echo "5. 备份管理"
+    echo "6. 更新脚本"
+    echo "7. 退出"
 }
 
 # 检查更新
@@ -46,15 +47,16 @@ main() {
     
     while true; do
         show_menu
-        read -p "请选择操作 (1-6): " choice
+        read -p "请选择操作 (1-7): " choice
         
         case $choice in
             1) bash <(curl -fsSL https://raw.githubusercontent.com/maticarmy/allinone/master/scripts/init.sh) ;;
             2) bash <(curl -fsSL https://raw.githubusercontent.com/maticarmy/allinone/master/scripts/cert.sh) ;;
             3) bash <(curl -fsSL https://raw.githubusercontent.com/maticarmy/allinone/master/scripts/firewall.sh) ;;
             4) bash <(curl -fsSL https://raw.githubusercontent.com/maticarmy/allinone/master/scripts/panel.sh) ;;
-            5) check_update ;;
-            6) 
+            5) bash <(curl -fsSL https://raw.githubusercontent.com/maticarmy/allinone/master/scripts/backup.sh) ;;
+            6) check_update ;;
+            7) 
                 echo -e "${GREEN}感谢使用！${NC}"
                 exit 0 
                 ;;
