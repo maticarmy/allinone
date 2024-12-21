@@ -4,53 +4,116 @@
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+PURPLE='\033[0;35m'
+CYAN='\033[0;36m'
+WHITE='\033[1;37m'
 NC='\033[0m'
 
 # 版本信息
 VERSION="1.0.0"
 
+# Matrix效果
+show_matrix() {
+    clear
+    for i in {1..10}; do
+        echo -ne "\033[$((RANDOM % 40 + 1));$((RANDOM % 80 + 1))H\033[32m$((RANDOM % 2))"
+    done
+    sleep 0.1
+}
+
 # 显示logo
 show_logo() {
     clear
     echo -e "${GREEN}"
-    echo "    _    _ _ ___ _   _  ___  _   _ _____"
-    echo "   / \  | | |_ _| \ | |/ _ \| \ | | ____|"
-    echo "  / _ \ | | || ||  \| | | | |  \| |  _|  "
-    echo " / ___ \| | || || |\  | |_| | |\  | |___ "
-    echo "/_/   \_\_|_|___|_| \_|\___/|_| \_|_____|"
+    echo "    ███╗   ███╗ █████╗ ████████╗██████╗ ██╗██╗  ██╗"
+    echo "    ████╗ ████║██╔══██╗╚══██╔══╝██╔══██╗██║╚██╗██╔╝"
+    echo "    ██╔████╔██║███████║   ██║   ██████╔╝██║ ╚███╔╝ "
+    echo "    ██║╚██╔╝██║██╔══██║   ██║   ██╔══██╗██║ ██╔██╗ "
+    echo "    ██║ ╚═╝ ██║██║  ██║   ██║   ██║  ██║██║██╔╝ ██╗"
+    echo "    ╚═╝     ╚═╝╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝╚═╝╚═╝  ╚═╝"
+    echo -e "${CYAN}"
+    echo "    ╔══════════════════════════════════════════════╗"
+    echo "    ║             VPS MASTER CONTROL              ║"
+    echo "    ║                Ver $VERSION                    ║"
+    echo "    ╚══════════════════════════════════════════════╝"
     echo -e "${NC}"
-    echo -e "${YELLOW}VPS一键配置工具 v${VERSION}${NC}"
-    echo -e "${YELLOW}作者: maticarmy${NC}\n"
+    echo -e "${GREEN}[+]${WHITE} System Ready...${NC}"
+    echo -e "${GREEN}[+]${WHITE} Loading Modules...${NC}"
+    echo -e "${GREEN}[+]${WHITE} Initialize Interface...${NC}"
+    sleep 0.5
 }
 
 # 主菜单
 show_menu() {
-    echo -e "\n${GREEN}=== 主菜单 ===${NC}"
-    echo "1. 系统初始化"
-    echo "2. SSL证书管理"
-    echo "3. 防火墙配置"
-    echo "4. 面板管理"
-    echo "5. 备份管理"
-    echo "6. 更新脚本"
-    echo "7. 退出"
+    echo -e "\n${CYAN}╔═══════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${CYAN}║${GREEN}                     SYSTEM CONTROL PANEL                      ${CYAN}║${NC}"
+    echo -e "${CYAN}╠═══════════════════════════════════════════════════════════════╣${NC}"
+    echo -e "${CYAN}║${WHITE}  [1] System Initialize          [2] SSL Certificate Manager   ${CYAN}║${NC}"
+    echo -e "${CYAN}║${WHITE}  [3] Firewall Configuration    [4] Panel Management          ${CYAN}║${NC}"
+    echo -e "${CYAN}║${WHITE}  [5] Backup Management         [6] Update System             ${CYAN}║${NC}"
+    echo -e "${CYAN}║${WHITE}  [7] Exit                                                    ${CYAN}║${NC}"
+    echo -e "${CYAN}╚═══════════════════════════════════════════════════════════════╝${NC}"
 }
 
-# 检查更新
-check_update() {
-    echo -e "${YELLOW}正在检查更新...${NC}"
-    # TODO: 实现更新检查逻辑
+# 子菜单样式
+show_submenu() {
+    local title=$1
+    echo -e "\n${BLUE}╔════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${BLUE}║${GREEN} $title ${BLUE}║${NC}"
+    echo -e "${BLUE}╚════════════════════════════════════════════════════════════╝${NC}"
+}
+
+# 操作提示样式
+show_tips() {
+    echo -e "\n${GREEN}[*] ${WHITE}$1${NC}"
+}
+
+# 警告提示样式
+show_warning() {
+    echo -e "\n${RED}[!] WARNING ${WHITE}════════════════════════════════════════════${NC}"
+    echo -e "${RED}[!]${WHITE} $1${NC}"
+    echo -e "${RED}[!]${WHITE} ════════════════════════════════════════════════════${NC}"
+}
+
+# 进度条
+show_progress() {
+    local duration=$1
+    local width=50
+    local progress=0
+    while [ $progress -le 100 ]; do
+        local count=$(($width * $progress / 100))
+        local spaces=$((width - count))
+        printf "\r[${GREEN}"
+        printf "%-${count}s" | tr ' ' '█'
+        printf "${WHITE}"
+        printf "%-${spaces}s" | tr ' ' '░'
+        printf "${NC}] ${progress}%%"
+        progress=$((progress + 2))
+        sleep $duration
+    done
+    echo
 }
 
 # 主程序
 main() {
+    for i in {1..3}; do
+        show_matrix
+    done
     show_logo
+    show_progress 0.01
     
     while true; do
         show_menu
-        read -p "请选择操作 (1-7): " choice
+        echo -ne "\n${GREEN}[>]${WHITE} Enter your choice (1-7): ${NC}"
+        read choice
         
         case $choice in
-            1) bash <(curl -fsSL https://raw.githubusercontent.com/maticarmy/allinone/master/scripts/init.sh) ;;
+            1) 
+                show_tips "Loading System Initialize Module..."
+                show_progress 0.02
+                bash <(curl -fsSL https://raw.githubusercontent.com/maticarmy/allinone/master/scripts/init.sh) 
+                ;;
             2) bash <(curl -fsSL https://raw.githubusercontent.com/maticarmy/allinone/master/scripts/cert.sh) ;;
             3) bash <(curl -fsSL https://raw.githubusercontent.com/maticarmy/allinone/master/scripts/firewall.sh) ;;
             4) bash <(curl -fsSL https://raw.githubusercontent.com/maticarmy/allinone/master/scripts/panel.sh) ;;
