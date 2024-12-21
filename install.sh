@@ -10,62 +10,8 @@ CYAN='\033[0;36m'
 WHITE='\033[1;37m'
 NC='\033[0m'
 
-# Matrix字符集
-CHARS="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789@#$%^&*()"
-
 # 版本信息
 VERSION="1.0.0"
-
-# Matrix加载动画
-show_matrix_loading() {
-    clear
-    local lines=$(tput lines)
-    local cols=$(tput cols)
-    local mid_line=$((lines/2))
-    local mid_col=$((cols/2))
-    
-    # 显示加载文字
-    echo -ne "\033[${mid_line};$((mid_col-10))H${GREEN}INITIALIZING...${NC}"
-    
-    # Matrix效果
-    for i in {1..50}; do
-        for j in {1..20}; do
-            local line=$((RANDOM % lines))
-            local col=$((RANDOM % cols))
-            local char="${CHARS:$((RANDOM % ${#CHARS})):1}"
-            echo -ne "\033[${line};${col}H${GREEN}${char}${NC}"
-        done
-        sleep 0.05
-        
-        # 更新加载进度
-        if [ $i -lt 10 ]; then
-            echo -ne "\033[${mid_line};$((mid_col-10))H${GREEN}INITIALIZING[${i}0%]${NC}"
-        fi
-    done
-    
-    # 清屏特效
-    for i in $(seq 1 $lines); do
-        echo -ne "\033[${i};1H${GREEN}"
-        printf '%*s' "$cols" | tr ' ' '0'
-        echo -ne "${NC}"
-        sleep 0.02
-    done
-    
-    # 显示系统信息
-    clear
-    echo -ne "\033[${mid_line};$((mid_col-15))H${GREEN}SYSTEM LOADING...${NC}"
-    sleep 0.5
-    echo -ne "\033[${mid_line};$((mid_col-15))H${GREEN}ACCESS GRANTED...${NC}"
-    sleep 0.5
-    
-    # 最终清屏
-    for i in $(seq 1 $lines); do
-        echo -ne "\033[${i};1H${GREEN}"
-        printf '%*s' "$cols" | tr ' ' ' '
-        echo -ne "${NC}"
-        sleep 0.01
-    done
-}
 
 # 显示logo
 show_logo() {
@@ -82,11 +28,9 @@ show_logo() {
     echo -e "│                   Ver $VERSION                     │"
     echo -e "└──────────────────────────────────────────────────┘${NC}"
     echo
-    echo -e "${GREEN}[+]${WHITE} 系统就绪...${NC}"
-    echo -e "${GREEN}[+]${WHITE} 加载模块...${NC}"
-    echo -e "${GREEN}[+]${WHITE} 初始化界面...${NC}"
+    echo -e "${GREEN}[+]${WHITE} 系统初始化...${NC}"
     
-    # 简单的加载动画
+    # 简单的加载进度条
     echo -ne "\n${GREEN}[${NC}"
     for i in {1..50}; do
         echo -ne "${GREEN}#${NC}"
