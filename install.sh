@@ -10,16 +10,61 @@ CYAN='\033[0;36m'
 WHITE='\033[1;37m'
 NC='\033[0m'
 
+# Matrix字符集
+CHARS="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789@#$%^&*()"
+
 # 版本信息
 VERSION="1.0.0"
 
-# Matrix效果
-show_matrix() {
+# Matrix加载动画
+show_matrix_loading() {
     clear
-    for i in {1..10}; do
-        echo -ne "\033[$((RANDOM % 40 + 1));$((RANDOM % 80 + 1))H\033[32m$((RANDOM % 2))"
+    local lines=$(tput lines)
+    local cols=$(tput cols)
+    local mid_line=$((lines/2))
+    local mid_col=$((cols/2))
+    
+    # 显示加载文字
+    echo -ne "\033[${mid_line};$((mid_col-10))H${GREEN}INITIALIZING...${NC}"
+    
+    # Matrix效果
+    for i in {1..50}; do
+        for j in {1..20}; do
+            local line=$((RANDOM % lines))
+            local col=$((RANDOM % cols))
+            local char="${CHARS:$((RANDOM % ${#CHARS})):1}"
+            echo -ne "\033[${line};${col}H${GREEN}${char}${NC}"
+        done
+        sleep 0.05
+        
+        # 更新加载进度
+        if [ $i -lt 10 ]; then
+            echo -ne "\033[${mid_line};$((mid_col-10))H${GREEN}INITIALIZING[${i}0%]${NC}"
+        fi
     done
-    sleep 0.1
+    
+    # 清屏特效
+    for i in $(seq 1 $lines); do
+        echo -ne "\033[${i};1H${GREEN}"
+        printf '%*s' "$cols" | tr ' ' '0'
+        echo -ne "${NC}"
+        sleep 0.02
+    done
+    
+    # 显示系统信息
+    clear
+    echo -ne "\033[${mid_line};$((mid_col-15))H${GREEN}SYSTEM LOADING...${NC}"
+    sleep 0.5
+    echo -ne "\033[${mid_line};$((mid_col-15))H${GREEN}ACCESS GRANTED...${NC}"
+    sleep 0.5
+    
+    # 最终清屏
+    for i in $(seq 1 $lines); do
+        echo -ne "\033[${i};1H${GREEN}"
+        printf '%*s' "$cols" | tr ' ' ' '
+        echo -ne "${NC}"
+        sleep 0.01
+    done
 }
 
 # 显示logo
@@ -33,47 +78,43 @@ show_logo() {
     echo "    ██║ ╚═╝ ██║██║  ██║   ██║   ██║  ██║██║██╔╝ ██╗"
     echo "    ╚═╝     ╚═╝╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝╚═╝╚═╝  ╚═╝"
     echo -e "${CYAN}"
-    echo "    ╔══════════════════════════════════════════════╗"
-    echo "    ║             VPS MASTER CONTROL              ║"
-    echo "    ║                Ver $VERSION                    ║"
-    echo "    ╚══════════════════════════════════════════════╝"
+    echo "    ┌──────────── VPS 管理控制台 ────────────┐"
+    echo "    │               Ver $VERSION                 │"
+    echo "    └─────────────────────────────────────┘"
     echo -e "${NC}"
-    echo -e "${GREEN}[+]${WHITE} System Ready...${NC}"
-    echo -e "${GREEN}[+]${WHITE} Loading Modules...${NC}"
-    echo -e "${GREEN}[+]${WHITE} Initialize Interface...${NC}"
+    echo -e "${GREEN}[+]${WHITE} 系统就绪...${NC}"
+    echo -e "${GREEN}[+]${WHITE} 加载模块...${NC}"
+    echo -e "${GREEN}[+]${WHITE} 初始化界面...${NC}"
     sleep 0.5
 }
 
 # 主菜单
 show_menu() {
-    echo -e "\n${CYAN}╔═══════════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${CYAN}║${GREEN}                     SYSTEM CONTROL PANEL                      ${CYAN}║${NC}"
-    echo -e "${CYAN}╠═══════════════════════════════════════════════════════════════╣${NC}"
-    echo -e "${CYAN}║${WHITE}  [1] System Initialize          [2] SSL Certificate Manager   ${CYAN}║${NC}"
-    echo -e "${CYAN}║${WHITE}  [3] Firewall Configuration    [4] Panel Management          ${CYAN}║${NC}"
-    echo -e "${CYAN}║${WHITE}  [5] Backup Management         [6] Update System             ${CYAN}║${NC}"
-    echo -e "${CYAN}║${WHITE}  [7] Exit                                                    ${CYAN}║${NC}"
-    echo -e "${CYAN}╚═══════════════════════════════════════════════════════════════╝${NC}"
+    echo -e "\n${GREEN}┌─────────────── 系统控制面板 ───────────────┐${NC}"
+    echo -e "${WHITE}  1. 系统初始化          2. SSL证书管理"
+    echo -e "  3. 防火墙配置          4. 面板管理"
+    echo -e "  5. 备份管理            6. 更新系统"
+    echo -e "  7. 退出"
+    echo -e "${GREEN}└───────────────────────────────────────┘${NC}"
 }
 
 # 子菜单样式
 show_submenu() {
     local title=$1
-    echo -e "\n${BLUE}╔════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "\n${BLUE}╔════════════════���═══════════════════════════════════════════╗${NC}"
     echo -e "${BLUE}║${GREEN} $title ${BLUE}║${NC}"
     echo -e "${BLUE}╚════════════════════════════════════════════════════════════╝${NC}"
 }
 
 # 操作提示样式
 show_tips() {
-    echo -e "\n${GREEN}[*] ${WHITE}$1${NC}"
+    echo -e "\n${GREEN}[*]${WHITE} $1${NC}"
 }
 
 # 警告提示样式
 show_warning() {
-    echo -e "\n${RED}[!] WARNING ${WHITE}════════════════════════════════════════════${NC}"
+    echo -e "\n${RED}[!] 警告 ${NC}"
     echo -e "${RED}[!]${WHITE} $1${NC}"
-    echo -e "${RED}[!]${WHITE} ════════════════════════════════════════════════════${NC}"
 }
 
 # 进度条
@@ -95,30 +136,53 @@ show_progress() {
     echo
 }
 
+# 初始化函数
+init_scripts() {
+    SCRIPT_DIR="/usr/local/allinone"
+    mkdir -p $SCRIPT_DIR
+    
+    if [ ! -f "${SCRIPT_DIR}/.version" ] || [ "$(cat ${SCRIPT_DIR}/.version)" != "$VERSION" ]; then
+        show_tips "正在下载脚本..."
+        
+        curl -fsSL https://raw.githubusercontent.com/maticarmy/allinone/master/scripts/init.sh -o ${SCRIPT_DIR}/init.sh
+        curl -fsSL https://raw.githubusercontent.com/maticarmy/allinone/master/scripts/cert.sh -o ${SCRIPT_DIR}/cert.sh
+        curl -fsSL https://raw.githubusercontent.com/maticarmy/allinone/master/scripts/firewall.sh -o ${SCRIPT_DIR}/firewall.sh
+        curl -fsSL https://raw.githubusercontent.com/maticarmy/allinone/master/scripts/panel.sh -o ${SCRIPT_DIR}/panel.sh
+        curl -fsSL https://raw.githubusercontent.com/maticarmy/allinone/master/scripts/backup.sh -o ${SCRIPT_DIR}/backup.sh
+        
+        chmod +x ${SCRIPT_DIR}/*.sh
+        echo "$VERSION" > ${SCRIPT_DIR}/.version
+        
+        show_tips "脚本下载完成！"
+    fi
+}
+
 # 主程序
 main() {
-    for i in {1..3}; do
-        show_matrix
-    done
+    show_matrix_loading
     show_logo
     show_progress 0.01
     
     while true; do
         show_menu
-        echo -ne "\n${GREEN}[>]${WHITE} Enter your choice (1-7): ${NC}"
+        echo -ne "\n${GREEN}[>]${WHITE} 请输入选项 (1-7): ${NC}"
         read choice
         
         case $choice in
             1) 
-                show_tips "Loading System Initialize Module..."
+                show_tips "加载系统初始化模块..."
                 show_progress 0.02
-                bash <(curl -fsSL https://raw.githubusercontent.com/maticarmy/allinone/master/scripts/init.sh) 
+                bash ${SCRIPT_DIR}/init.sh
                 ;;
-            2) bash <(curl -fsSL https://raw.githubusercontent.com/maticarmy/allinone/master/scripts/cert.sh) ;;
-            3) bash <(curl -fsSL https://raw.githubusercontent.com/maticarmy/allinone/master/scripts/firewall.sh) ;;
-            4) bash <(curl -fsSL https://raw.githubusercontent.com/maticarmy/allinone/master/scripts/panel.sh) ;;
-            5) bash <(curl -fsSL https://raw.githubusercontent.com/maticarmy/allinone/master/scripts/backup.sh) ;;
-            6) check_update ;;
+            2) bash ${SCRIPT_DIR}/cert.sh ;;
+            3) bash ${SCRIPT_DIR}/firewall.sh ;;
+            4) bash ${SCRIPT_DIR}/panel.sh ;;
+            5) bash ${SCRIPT_DIR}/backup.sh ;;
+            6) 
+                show_tips "检查更新..."
+                init_scripts
+                show_tips "更新完成！"
+                ;;
             7) 
                 echo -e "${GREEN}感谢使用！${NC}"
                 exit 0 
