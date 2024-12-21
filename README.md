@@ -1,57 +1,44 @@
-# All in One Shell Scripts
+# AllInOne VPS工具集
 
-这是一个实用的Shell脚本集合，旨在简化日常运维和开发工作。
+简单易用的VPS一键配置工具，支持系统初始化、SSL证书、防火墙配置等功能。
 
-## 目录结构
+## 一键安装
 
-```
-daily-shell-scripts/
-├── src/                           # 源代码目录
-│   ├── network/                   # 网络工具脚本
-│   │   └── ssl_renew.sh          # SSL证书自动续签工具
-│   └── ...                       # 其他工具目录
-```
-
-## 脚本列表
-
-### 1. SSL证书自动续签工具 (ssl_renew.sh)
-
-自动化SSL证书申请和续签的交互式工具，基于acme.sh。
-
-#### 功能特点：
-- 自动检查并安装acme.sh
-- 支持申请新证书
-- 自动续签已有证书
-- 查看证书状态
-- 配置自动续签（通过crontab）
-- 友好的交互界面
-
-#### 使用方法：
-1. 确保脚本有执行权限：
 ```bash
-chmod +x src/network/ssl_renew.sh
+bash <(curl -fsSL https://raw.githubusercontent.com/maticarmy/allinone/master/install.sh)
 ```
 
-2. 运行脚本：
-```bash
-./src/network/ssl_renew.sh
-```
+## 功能特点
 
-3. 按照菜单提示进行操作：
-   - 选项1：申请新证书
-   - 选项2：续签已有证书
-   - 选项3：查看证书状态
-   - 选项4：配置自动续签
+- 系统初始化
+  - 更新系统
+  - 安装常用工具
+  - 优化系统配置
+  
+- SSL证书管理
+  - 自动申请证书
+  - 自动续签
+  - 支持宝塔面板
+  
+- 防火墙配置
+  - 一键开启防火墙
+  - 智能端口管理
+  - 安全规则配置
+  
+- 面板管理
+  - 宝塔面板
+  - 其他面板支持
 
-#### 依赖：
-- acme.sh（脚本会自动检查���提示安装）
-- bash
-- curl
+## 使用说明
 
-## 贡献指南
+1. 运行一键安装命令
+2. 选择需要的功能
+3. 按照提示进行操作
 
-欢迎提交Issue和Pull Request来帮助改进这个项目。
+## 更新日志
 
-## 许可证
+- v1.0.0: 首次发布
 
-MIT License 
+## 问题反馈
+
+如有问题请提交 [Issues](https://github.com/maticarmy/allinone/issues)
