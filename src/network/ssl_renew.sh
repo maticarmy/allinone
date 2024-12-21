@@ -1,138 +1,216 @@
 #!/bin/bash
 
-# SSL证书自动续签脚本
-# 依赖: acme.sh
-
 # 颜色定义
+RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
-RED='\033[0;31m'
 NC='\033[0m'
 
-# 配置文件路径
-CONFIG_FILE="$HOME/.ssl_renew_config"
+# 检查是否为root用户
+check_root() {
+    if [ "$(id -u)" != "0" ]; then
+        echo -e "${RED}错误：请使用 root 用户运行此脚本${NC}"
+        exit 1
+    fi
+}
 
-# 检查acme.sh是否安装
-check_acme() {
-    if ! command -v acme.sh &> /dev/null; then
-        echo -e "${RED}未检测到acme.sh，是否安装？(y/n)${NC}"
-        read -r install_choice
-        if [[ $install_choice == "y" ]]; then
-            curl https://get.acme.sh | sh
-            source "$HOME/.bashrc"
+# 初始化防火墙
+init_firewall() {
+    echo -e "${YELLOW}正在初始化防火墙...${NC}"
+    
+    # 安装 UFW
+    if ! command -v ufw &> /dev/null; then
+        echo -e "${YELLOW}正在安装 UFW...${NC}"
+        apt update &>/dev/null
+        apt install ufw -y &>/dev/null
+    fi
+    
+    # 配置基础规则
+    ufw default deny incoming
+    ufw default allow outgoing
+    
+    # 允许 SSH
+    ufw allow ssh
+    
+    # 允许 HTTP/HTTPS
+    ufw allow 80/tcp
+    ufw allow 443/tcp
+    
+    # 启用防火墙
+    echo "y" | ufw enable
+    
+    echo -e "${GREEN}防火墙初始化完成${NC}"
+}
+
+# 检查防火墙端口
+check_firewall() {
+    echo -e "${YELLOW}检查防火墙配置...${NC}"
+    
+    # 检查 UFW 状态
+    if command -v ufw &> /dev/null; then
+        if ! ufw status | grep -q "80/tcp.*ALLOW"; then
+            echo -e "${YELLOW}正在开放 80 端口...${NC}"
+            ufw allow 80/tcp
+        fi
+        if ! ufw status | grep -q "443/tcp.*ALLOW"; then
+            echo -e "${YELLOW}正在开放 443 端口...${NC}"
+            ufw allow 443/tcp
+        fi
+    else
+        echo -e "${YELLOW}未检测到 UFW，正在安装...${NC}"
+        init_firewall
+    fi
+    
+    echo -e "${GREEN}防火墙配置检查完成${NC}"
+}
+
+# 配置自定义端口
+configure_custom_ports() {
+    while true; do
+        echo -e "\n${YELLOW}是否需要开放其他端口？(y/n)${NC}"
+        read -r answer
+        case $answer in
+            [Yy]*)
+                echo -e "请输入要开放的端口号（例如：3306）："
+                read -r port
+                echo -e "请选择协议类型："
+                echo "1) TCP"
+                echo "2) UDP"
+                echo "3) TCP+UDP"
+                read -r proto
+                case $proto in
+                    1) ufw allow "$port"/tcp
+                       echo -e "${GREEN}已开放 TCP 端口 $port${NC}" ;;
+                    2) ufw allow "$port"/udp
+                       echo -e "${GREEN}已开放 UDP 端口 $port${NC}" ;;
+                    3) ufw allow "$port"
+                       echo -e "${GREEN}已开放 TCP/UDP 端口 $port${NC}" ;;
+                    *) echo -e "${RED}无效的选择${NC}" ;;
+                esac
+                ;;
+            [Nn]*) break ;;
+            *) echo -e "${RED}请输入 y 或 n${NC}" ;;
+        esac
+    done
+}
+
+# 显示防火墙状态
+show_firewall_status() {
+    echo -e "\n${YELLOW}当前防火墙状态：${NC}"
+    ufw status numbered
+}
+
+# 检查是否安装了宝塔面板
+if [ -f "/etc/init.d/bt" ]; then
+    BT_PANEL=true
+    echo -e "${GREEN}检测到宝塔面板环境${NC}"
+else
+    BT_PANEL=false
+fi
+
+# 申请新证书函数
+apply_cert() {
+    local domain=$1
+    local email=$2
+    local web_root=$3
+    
+    # 检查防火墙
+    check_firewall
+    
+    if [ "$BT_PANEL" = true ]; then
+        # 使用宝塔命令申请证书
+        echo -e "${YELLOW}使用宝塔面板申请证书...${NC}"
+        bt ssl $domain
+        if [ $? -eq 0 ]; then
+            echo -e "${GREEN}证书申请成功！${NC}"
         else
-            echo -e "${RED}请先安装acme.sh后再运行此脚本${NC}"
-            exit 1
+            echo -e "${RED}证书申请失败，请检查配置后重试${NC}"
+        fi
+    else
+        # 原来的 acme.sh 方式
+        if ! command -v acme.sh &> /dev/null; then
+            echo -e "${YELLOW}正在安装 acme.sh...${NC}"
+            curl https://get.acme.sh | sh -s email=$email
+            source ~/.bashrc
+        fi
+        
+        echo -e "${YELLOW}正在申请证书...${NC}"
+        acme.sh --issue -d $domain -w $web_root
+        if [ $? -eq 0 ]; then
+            echo -e "${GREEN}证书申请成功！${NC}"
+        else
+            echo -e "${RED}证书申请失败，请检查配置后重试${NC}"
         fi
     fi
 }
 
-# 保存配置
-save_config() {
-    local domain=$1
-    local email=$2
-    local web_root=$3
-    echo "DOMAIN=$domain" > "$CONFIG_FILE"
-    echo "EMAIL=$email" >> "$CONFIG_FILE"
-    echo "WEB_ROOT=$web_root" >> "$CONFIG_FILE"
-}
-
-# 加载配置
-load_config() {
-    if [[ -f "$CONFIG_FILE" ]]; then
-        source "$CONFIG_FILE"
-        return 0
-    fi
-    return 1
-}
-
 # 主菜单
-show_menu() {
+while true; do
+    clear
     echo -e "${GREEN}=== SSL证书自动续签工具 ===${NC}"
     echo "1. 申请新证书"
     echo "2. 续签已有证书"
     echo "3. 查看证书状态"
     echo "4. 配置自动续签"
-    echo "5. 退出"
-    echo -n "请选择操作 (1-5): "
-}
-
-# 申请新证书
-apply_new_cert() {
-    echo -e "${YELLOW}请输入域名:${NC}"
-    read -r domain
-    echo -e "${YELLOW}请输入邮箱:${NC}"
-    read -r email
-    echo -e "${YELLOW}请输入网站根目录路径:${NC}"
-    read -r web_root
-
-    echo -e "${GREEN}正在申请证书...${NC}"
-    acme.sh --issue -d "$domain" --webroot "$web_root" --email "$email"
+    echo "5. 配置防火墙"
+    echo "6. 查看防火墙状态"
+    echo "7. 退出"
     
-    if [ $? -eq 0 ]; then
-        save_config "$domain" "$email" "$web_root"
-        echo -e "${GREEN}证书申请成功！${NC}"
-    else
-        echo -e "${RED}证书申请失败，请检查配置后重试${NC}"
-    fi
-}
-
-# 续签证书
-renew_cert() {
-    if load_config; then
-        echo -e "${GREEN}正在续签证书: $DOMAIN${NC}"
-        acme.sh --renew -d "$DOMAIN"
-        if [ $? -eq 0 ]; then
-            echo -e "${GREEN}证书续签成功！${NC}"
-        else
-            echo -e "${RED}证书续签失败${NC}"
-        fi
-    else
-        echo -e "${RED}未找到配置信息，请先申请证书${NC}"
-    fi
-}
-
-# 查看证书状态
-check_cert_status() {
-    if load_config; then
-        echo -e "${GREEN}证书信息 - 域名: $DOMAIN${NC}"
-        acme.sh --list
-    else
-        echo -e "${RED}未找到配置信息${NC}"
-    fi
-}
-
-# 配置自动续签
-setup_auto_renew() {
-    if ! load_config; then
-        echo -e "${RED}请先申请证书${NC}"
-        return
-    fi
-
-    echo "添加自动续签到crontab..."
-    (crontab -l 2>/dev/null; echo "0 0 * * * acme.sh --cron --home \"$HOME/.acme.sh\"") | crontab -
-    echo -e "${GREEN}自动续签配置完成！每天凌晨会检查并自动续签${NC}"
-}
-
-# 主程序
-main() {
-    check_acme
-    while true; do
-        show_menu
-        read -r choice
-        case $choice in
-            1) apply_new_cert ;;
-            2) renew_cert ;;
-            3) check_cert_status ;;
-            4) setup_auto_renew ;;
-            5) echo -e "${GREEN}感谢使用！${NC}"; exit 0 ;;
-            *) echo -e "${RED}无效选择${NC}" ;;
-        esac
-        echo
-        echo -e "${YELLOW}按回车键继续...${NC}"
-        read -r
-        clear
-    done
-}
-
-main 
+    read -p "请选择操作 (1-7): " choice
+    
+    case $choice in
+        1)
+            read -p "请输入域名: " domain
+            read -p "请输入邮箱: " email
+            if [ "$BT_PANEL" = false ]; then
+                read -p "请输入网站根目录路径: " web_root
+            else
+                web_root=""
+            fi
+            apply_cert "$domain" "$email" "$web_root"
+            ;;
+        2)
+            if [ "$BT_PANEL" = true ]; then
+                echo -e "${YELLOW}使用宝塔面板续签证书...${NC}"
+                bt ssl -r
+            else
+                echo -e "${YELLOW}使用 acme.sh 续签证书...${NC}"
+                acme.sh --renew-all
+            fi
+            ;;
+        3)
+            if [ "$BT_PANEL" = true ]; then
+                echo -e "${YELLOW}查看宝塔面板证书状态...${NC}"
+                bt ssl
+            else
+                echo -e "${YELLOW}查看证书状态...${NC}"
+                acme.sh --list
+            fi
+            ;;
+        4)
+            if [ "$BT_PANEL" = true ]; then
+                echo -e "${GREEN}宝塔面板已自动配置证书续签${NC}"
+            else
+                echo -e "${YELLOW}配置 acme.sh 自动续签...${NC}"
+                (crontab -l 2>/dev/null; echo "0 0 * * * /root/.acme.sh/acme.sh --cron --home /root/.acme.sh") | crontab -
+                echo -e "${GREEN}自动续签配置完成${NC}"
+            fi
+            ;;
+        5)
+            check_firewall
+            configure_custom_ports
+            ;;
+        6)
+            show_firewall_status
+            ;;
+        7)
+            echo -e "${GREEN}退出程序${NC}"
+            exit 0
+            ;;
+        *)
+            echo -e "${RED}无效选择${NC}"
+            ;;
+    esac
+    
+    read -p "按回车键继续..."
+done 
